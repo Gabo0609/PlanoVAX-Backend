@@ -1,0 +1,242 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RolUsuario {
+  ADMINISTRADOR
+  JEFE_TERRENO
+  AYUDANTE_TERRENO
+  OFICINA_TECNICA
+}
+
+enum EstadoActividad {
+  EN_PROCESO
+  COMPLETADA
+  ATRASADA
+  NO_INICIADA
+}
+
+enum PrioridadRestriccion {
+  IMPORTANTE
+  URGENTE
+}
+
+enum EstadoRestriccion {
+  PENDIENTE
+  EN_PROCESO
+  CERRADA
+}
+
+enum EstadoLookahead {
+  PLANIFICADA
+  EN_REVISION
+  LIBERADA
+  BLOQUEADA
+}
+
+enum EstadoRestriccionesLookahead {
+  SIN_RESTRICCIONES
+  EN_GESTION
+  LIBERADA
+  VENCIDA
+}
+
+enum EstadoLiberacionLookahead {
+  LIBERADA
+  NO_LIBERADA
+  PROGRAMADA
+}
+
+model Usuario {
+  id        String     @id @default(uuid())
+  nombre    String
+  email     String     @unique
+  password  String
+  rol       RolUsuario
+  cargo     String?
+  activo    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Proyecto {
+  id              String          @id @default(uuid())
+  nombre          String
+  codigo          String?         @unique
+  ubicacion       String?
+  descripcion     String?
+  activo          Boolean         @default(true)
+
+  planesSemanales PlanSemanal[]
+  avancesTerreno  AvanceTerreno[]
+  viviendas       Vivienda[]
+  lookaheads      Lookahead[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Actividad {
+  id             String          @id @default(uuid())
+  nombre         String
+  activo         Boolean         @default(true)
+
+  planSemanal    PlanSemanal[]
+  lookahead      Lookahead[]
+  avancesTerreno AvanceTerreno[]
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Cuadrilla {
+  id        String   @id @default(uuid())
+  nombre    String
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TipoCnc {
+  id        String        @id @default(uuid())
+  nombre    String
+  activo    Boolean       @default(true)
+  planes    PlanSemanal[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model TipoRestriccion {
+  id            String        @id @default(uuid())
+  nombre        String
+  activo        Boolean       @default(true)
+  restricciones Restriccion[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Vivienda {
+  id     String  @id @default(uuid())
+  numero Int
+  zona   String
+  modelo String
+  activo Boolean @default(true)
+
+  proyectoId String
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id])
+
+  lookaheads Lookahead[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([numero, zona, proyectoId])
+}
+
+model PlanSemanal {
+  id               String @id @default(uuid())
+  semana           String
+  avanceProgramado Int
+  avanceReal       Int    @default(0)
+
+  fechaInicio  DateTime?
+  fechaTermino DateTime?
+
+  responsable String?
+  comentario  String?
+
+  actividadId String
+  actividad   Actividad @relation(fields: [actividadId], references: [id])
+
+  proyectoId String
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id])
+
+  tipoCncId String?
+  tipoCnc   TipoCnc? @relation(fields: [tipoCncId], references: [id])
+
+  adjuntos PlanSemanalAdjunto[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AvanceTerreno {
+  id String @id @default(uuid())
+
+  fechaInicio  DateTime?
+  fechaTermino DateTime?
+  avance       Int             @default(0)
+  estado       EstadoActividad @default(NO_INICIADA)
+
+  comentario String?
+
+  actividadId String
+  actividad   Actividad @relation(fields: [actividadId], references: [id])
+
+  proyectoId String
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([actividadId, proyectoId])
+}
+
+model PlanSemanalAdjunto {
+  id            String  @id @default(uuid())
+  url           String
+  nombreArchivo String?
+  tipoArchivo   String?
+
+  planSemanalId String
+  planSemanal   PlanSemanal @relation(fields: [planSemanalId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Restriccion {
+  id              String               @id @default(uuid())
+  descripcion     String
+  prioridad       PrioridadRestriccion
+  responsable     String
+  fechaCompromiso DateTime
+  estado          EstadoRestriccion    @default(PENDIENTE)
+
+  tipoRestriccionId String
+  tipoRestriccion   TipoRestriccion @relation(fields: [tipoRestriccionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lookahead {
+  id String @id @default(uuid())
+
+  semana String
+
+  responsable              String?
+  fechaInicioTentativa     DateTime?
+  fechaTerminoTentativa    DateTime?
+  restriccionesAsociadas   String?
+  observacion              String?
+
+  estadoRestricciones EstadoRestriccionesLookahead @default(SIN_RESTRICCIONES)
+  estadoLiberacion    EstadoLiberacionLookahead    @default(NO_LIBERADA)
+
+  actividadId String
+  actividad   Actividad @relation(fields: [actividadId], references: [id])
+
+  viviendaId String
+  vivienda   Vivienda @relation(fields: [viviendaId], references: [id])
+
+  proyectoId String
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
