@@ -17,13 +17,15 @@ const restricciones_routes_1 = __importDefault(require("./modules/restricciones/
 const avance_terreno_routes_1 = __importDefault(require("./modules/avance-terreno/avance-terreno.routes"));
 const lookahead_routes_1 = __importDefault(require("./modules/lookahead/lookahead.routes"));
 const app = (0, express_1.default)();
+const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:4173",
+    "http://localhost:5173",
+    "http://172.16.43.59:4173",
+    process.env.FRONTEND_URL,
+].filter(Boolean);
 app.use((0, cors_1.default)({
-    origin: [
-        "https://trash-reliable-component.ngrok-free.dev",
-        "http://localhost:3000",
-        "http://localhost:4173",
-        "http://172.16.43.59:4173",
-    ],
+    origin: allowedOrigins,
     credentials: true,
 }));
 app.options(/.*/, (0, cors_1.default)());
@@ -38,6 +40,20 @@ app.use((req, _res, next) => {
     console.log("REQ:", req.method, req.url);
     next();
 });
+app.get("/", (_req, res) => {
+    res.status(200).json({
+        status: "online",
+        application: "PlanoVAX Backend",
+        version: "1.0.0",
+    });
+});
+app.get("/health", (_req, res) => {
+    res.status(200).json({
+        status: "ok",
+        application: "PlanoVAX Backend",
+        version: "1.0.0",
+    });
+});
 app.use("/auth", auth_routes_1.default);
 app.use("/proyectos", proyectos_routes_1.default);
 app.use("/actividades", actividades_routes_1.default);
@@ -46,17 +62,5 @@ app.use("/restricciones", restricciones_routes_1.default);
 app.use("/avance-terreno", avance_terreno_routes_1.default);
 app.use("/dashboard", dashboard_routes_1.default);
 app.use("/lookahead", lookahead_routes_1.default);
-app.get("/health", (_req, res) => {
-    res.status(200).json({
-        status: "ok",
-        application: "PlanoVAX Backend",
-        version: "1.0.0",
-    });
-});
-const frontendDistPath = path_1.default.resolve(__dirname, "../../planovax-frontend/dist");
-app.use(express_1.default.static(frontendDistPath));
-app.use((_req, res) => {
-    res.sendFile(path_1.default.join(frontendDistPath, "index.html"));
-});
 exports.default = app;
 //# sourceMappingURL=app.js.map

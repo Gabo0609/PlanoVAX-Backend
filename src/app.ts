@@ -15,18 +15,23 @@ import lookaheadRoutes from "./modules/lookahead/lookahead.routes";
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:4173",
+  "http://localhost:5173",
+  "http://172.16.43.59:4173",
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: [
-      "https://trash-reliable-component.ngrok-free.dev",
-      "http://localhost:3000",
-      "http://localhost:4173",
-      "http://172.16.43.59:4173",
-    ],
+    origin: allowedOrigins,
     credentials: true,
   })
 );
+
 app.options(/.*/, cors());
+
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
@@ -44,14 +49,13 @@ app.use((req, _res, next) => {
   next();
 });
 
-app.use("/auth", authRoutes);
-app.use("/proyectos", proyectosRoutes);
-app.use("/actividades", actividadesRoutes);
-app.use("/plan-semanal", planSemanalRoutes);
-app.use("/restricciones", restriccionesRoutes);
-app.use("/avance-terreno", avanceTerrenoRoutes);
-app.use("/dashboard", dashboardRoutes);
-app.use("/lookahead", lookaheadRoutes);
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    status: "online",
+    application: "PlanoVAX Backend",
+    version: "1.0.0",
+  });
+});
 
 app.get("/health", (_req, res) => {
   res.status(200).json({
@@ -61,12 +65,13 @@ app.get("/health", (_req, res) => {
   });
 });
 
-const frontendDistPath = path.resolve(__dirname, "../../planovax-frontend/dist");
-
-app.use(express.static(frontendDistPath));
-
-app.use((_req, res) => {
-  res.sendFile(path.join(frontendDistPath, "index.html"));
-});
+app.use("/auth", authRoutes);
+app.use("/proyectos", proyectosRoutes);
+app.use("/actividades", actividadesRoutes);
+app.use("/plan-semanal", planSemanalRoutes);
+app.use("/restricciones", restriccionesRoutes);
+app.use("/avance-terreno", avanceTerrenoRoutes);
+app.use("/dashboard", dashboardRoutes);
+app.use("/lookahead", lookaheadRoutes);
 
 export default app;
