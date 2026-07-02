@@ -9,6 +9,10 @@ import {
   updateLookahead,
 } from "./lookahead.service";
 
+function getParamId(req: Request): string {
+  return String(req.params.id);
+}
+
 export async function obtenerCatalogosLookahead(req: Request, res: Response) {
   try {
     const data = await getCatalogosLookahead();
@@ -43,7 +47,8 @@ export async function listarLookahead(req: Request, res: Response) {
 
 export async function obtenerLookahead(req: Request, res: Response) {
   try {
-    const data = await getLookaheadById(req.params.id);
+    const id = getParamId(req);
+    const data = await getLookaheadById(id);
 
     if (!data) {
       return res.status(404).json({
@@ -81,7 +86,8 @@ export async function crearLookahead(req: Request, res: Response) {
 
 export async function actualizarLookahead(req: Request, res: Response) {
   try {
-    const data = await updateLookahead(req.params.id, req.body);
+    const id = getParamId(req);
+    const data = await updateLookahead(id, req.body);
 
     res.json({
       message: "Registro lookahead actualizado correctamente",
@@ -97,7 +103,8 @@ export async function actualizarLookahead(req: Request, res: Response) {
 
 export async function eliminarLookahead(req: Request, res: Response) {
   try {
-    await deleteLookahead(req.params.id);
+    const id = getParamId(req);
+    await deleteLookahead(id);
 
     res.json({
       message: "Registro lookahead eliminado correctamente",
