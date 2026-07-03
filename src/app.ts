@@ -20,17 +20,26 @@ const allowedOrigins = [
   "http://localhost:4173",
   "http://localhost:5173",
   "http://172.16.43.59:4173",
+  "https://plano-vax-frontend.vercel.app",
+  "https://plano-vax-frontend-9va3tu44e-planovax.vercel.app",
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  })
-);
+const corsOptions: cors.CorsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-app.options(/.*/, cors());
+    return callback(new Error(`Origen no permitido por CORS: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 app.use(
   helmet({
