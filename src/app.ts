@@ -27,7 +27,15 @@ const allowedOrigins = [
 
 const corsOptions: cors.CorsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    if (origin.endsWith(".vercel.app")) {
       return callback(null, true);
     }
 
@@ -52,11 +60,6 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-
-app.use((req, _res, next) => {
-  console.log("REQ:", req.method, req.url);
-  next();
-});
 
 app.get("/", (_req, res) => {
   res.status(200).json({
